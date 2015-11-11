@@ -27,7 +27,6 @@ public class BinMapEditor extends ApplicationAdapter implements TextInputListene
 	public void create() {
 		camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		camera.position.set(camera.viewportWidth / 2f, camera.viewportHeight / 2f, 0);
-		//camera.setToOrtho(false, camera.viewportWidth / 2f, camera.viewportHeight / 2f);
         camera.update();
         
 		map = new Map();
@@ -47,11 +46,14 @@ public class BinMapEditor extends ApplicationAdapter implements TextInputListene
 		} else if (Gdx.input.isKeyPressed(Keys.RIGHT)) {
 			camera.translate(180 * Gdx.graphics.getDeltaTime(), 0);
 		}
+		if (Gdx.input.isKeyPressed(Keys.R)) {
+			map.randomizeGroundTiles();
+		}
 		camera.update();
+		batch.setProjectionMatrix(camera.combined);
 		
 		map.update((int)(camera.position.x - camera.viewportWidth / 2f),
 				(int)(camera.position.y - camera.viewportHeight / 2f));
-		batch.setProjectionMatrix(camera.combined);
 		
 		Gdx.gl.glClearColor(0, 0, 0, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);

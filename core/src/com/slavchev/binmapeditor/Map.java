@@ -71,7 +71,7 @@ public class Map {
 				int mapXindex = (int) ((mouseX - tileSetWidth) / (int)(tileSize * scale));
 
 				if (mapYindex >= map.length || mapXindex >= map[0].length
-						|| mapYindex <= 0 || mapXindex <= 0) {
+						|| mapYindex < 0 || mapXindex < 0) {
 					return;
 				}
 				map[mapYindex][mapXindex] = toSignedByte(selectedTileID);
@@ -131,16 +131,15 @@ public class Map {
 			return;
 		}
 		map = map2;
-		//printMap(mapWidth, mapHeight, map2);
+		//printMap();
 	}
 
 	@SuppressWarnings("static-method")
-	private void printMap(int mapWidth, int mapHeight, byte[][] map) {
-		System.out.println(mapWidth + " " + mapHeight);
-		for (int k = 0; k < mapHeight; k++) {
-			for (int l = 0; l < mapWidth; l++) {
-				int tileID = map[k][l];
-				System.out.print((tileID + 127) + " ");
+	private void printMap() {
+		System.out.println(width + " " + height);
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				System.out.print(getTileID(x, y) + " ");
 			}
 			System.out.println();
 		}
@@ -182,10 +181,36 @@ public class Map {
 			}
 		}
 	}
+	
+	public void randomizeGroundTiles() {
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				if (getTileID(x, y) < 9) {
+					setTileID(x, y, (int)(Math.random() * 9));
+				} else if (getTileID(x, y) < 19) {
+					setTileID(x, y, (int)(10 + Math.random() * 9));
+				} else if (getTileID(x, y) < 29) {
+					setTileID(x, y, (int)(20 + Math.random() * 9));
+				} else if (getTileID(x, y) < 39) {
+					setTileID(x, y, (int)(30 + Math.random() * 9));
+				}
+			}
+		}
+		//printMap();
+	}
 
 	/* takes: x and y and returns the tileID as an int */
 	public int getTileID(int x, int y) {
 		return map[y][x] + 127;
+	}
+	
+	/* modifies the map */
+	public void setTileID(int xIndex, int yIndex, int tileID) {
+		if (xIndex < 0 || xIndex >= map[0].length
+				|| yIndex < 0 || yIndex >= map.length) {
+			return;
+		}
+		map[yIndex][xIndex] = toSignedByte(tileID);
 	}
 
 	public Sprite getTileSet() {
