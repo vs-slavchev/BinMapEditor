@@ -1,9 +1,5 @@
 package com.slavchev.binmapeditor;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -22,6 +18,7 @@ public class BinMapEditor extends ApplicationAdapter implements TextInputListene
 	
 	String userInput = "";
 	boolean opened = false;
+	int cameraSpeed = 400;
 
 	@Override
 	public void create() {
@@ -38,22 +35,31 @@ public class BinMapEditor extends ApplicationAdapter implements TextInputListene
 		openAndSaveInputHandling();
 				
 		if (Gdx.input.isKeyPressed(Keys.DOWN)) {	
-			camera.translate(0, -180 * Gdx.graphics.getDeltaTime());
+			camera.translate(0, -cameraSpeed * Gdx.graphics.getDeltaTime());
 		} else if (Gdx.input.isKeyPressed(Keys.UP)) {
-			camera.translate(0, 180 * Gdx.graphics.getDeltaTime());
+			camera.translate(0, cameraSpeed * Gdx.graphics.getDeltaTime());
 		} else if (Gdx.input.isKeyPressed(Keys.LEFT)) {	
-			camera.translate(-180 * Gdx.graphics.getDeltaTime(), 0);
+			camera.translate(-cameraSpeed * Gdx.graphics.getDeltaTime(), 0);
 		} else if (Gdx.input.isKeyPressed(Keys.RIGHT)) {
-			camera.translate(180 * Gdx.graphics.getDeltaTime(), 0);
-		}
-		if (Gdx.input.isKeyPressed(Keys.R)) {
-			map.randomizeGroundTiles();
+			camera.translate(cameraSpeed * Gdx.graphics.getDeltaTime(), 0);
 		}
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
 		
-		map.update((int)(camera.position.x - camera.viewportWidth / 2f),
-				(int)(camera.position.y - camera.viewportHeight / 2f));
+		int cameraOffsetX = (int)(camera.position.x - camera.viewportWidth / 2f);
+		int cameraOffsetY = (int)(camera.position.y - camera.viewportHeight / 2f);
+		
+		if (Gdx.input.isKeyPressed(Keys.R)) {
+			map.randomizeGroundTiles();
+		}
+		if (Gdx.input.isKeyPressed(Keys.M)) {
+			map.markFillCoords(cameraOffsetX, cameraOffsetY);
+		}
+		if (Gdx.input.isKeyPressed(Keys.F)) {
+			map.fill(cameraOffsetX, cameraOffsetY);
+		}
+		
+		map.update(cameraOffsetX, cameraOffsetY);
 		
 		Gdx.gl.glClearColor(0, 0, 0, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);

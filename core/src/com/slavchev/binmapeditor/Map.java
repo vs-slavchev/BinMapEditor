@@ -7,12 +7,12 @@ import java.util.Properties;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Buttons;
-import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 
 public class Map {
@@ -22,10 +22,7 @@ public class Map {
 	private int width, height, factor;
 	private byte[][] map;
 	
-
 	// drawing on the screen
-	private float scale = 0.5f;
-	private float tileSetWidth, tileSetHeight;
 	private int tileSize = 32;
 	private final int numTilesPerRow = 10;
 	private Sprite tileSet;
@@ -33,15 +30,16 @@ public class Map {
 
 	// GUI
 	private int selectedTileID;
+	private Vector2 fillMark;
+	
+	// files
+	private String dataFilePath = "data/";
 	
 	public Map() {
 		loadProperties();
 		
-		tileSet = new Sprite(new Texture(tilesetName));
-		tileSet.setScale(scale);
-		tileSetWidth = tileSet.getWidth() * scale;
-		tileSetHeight = tileSet.getHeight() * scale;
-		tileSet.setPosition( 0 - tileSetWidth * scale, Gdx.graphics.getHeight() - tileSetHeight*(scale + 1));
+		tileSet = new Sprite(new Texture(dataFilePath + tilesetName));
+		tileSet.setPosition( 0, Gdx.graphics.getHeight() - tileSet.getHeight());
 		
 		map = new byte[height][width];
 		for (int i = 0; i < height; i++) {
@@ -49,26 +47,26 @@ public class Map {
 				map[i][j] = toSignedByte(0);
 			}
 		}
+		
 	}
 
 	public void update(int offsetX, int offsetY) {
 		int mouseX = Gdx.input.getX() + offsetX;
 		int mouseY = Gdx.input.getY() - offsetY;
 
-		tileSet.setPosition( offsetX - tileSetWidth * scale,
-				offsetY + Gdx.graphics.getHeight() - tileSetHeight*(scale + 1));
+		tileSet.setPosition( offsetX, offsetY + Gdx.graphics.getHeight() - tileSet.getHeight());
 		if (Gdx.input.justTouched() && Gdx.input.isButtonPressed(Buttons.RIGHT)) {
 
 			// if selecting a tile
-			if (Gdx.input.getX() < tileSetWidth && Gdx.input.getY() < tileSetHeight) {
-				selectedTileID = (int) (Gdx.input.getX() / (tileSize * scale)
-						+ (Gdx.input.getY() / (int)(tileSize * scale)) * numTilesPerRow);
+			if (Gdx.input.getX() < tileSet.getWidth() && Gdx.input.getY() < tileSet.getHeight()) {
+				selectedTileID = Gdx.input.getX() / tileSize
+						+ (Gdx.input.getY() / tileSize) * numTilesPerRow;
 			}
 		}
 		if (Gdx.input.isTouched() && Gdx.input.isButtonPressed(Buttons.LEFT)) {
-			if (mouseX >= tileSetWidth) {
-				int mapYindex = mouseY / (int)(tileSize * scale);
-				int mapXindex = (int) ((mouseX - tileSetWidth) / (int)(tileSize * scale));
+			if (mouseX >= tileSet.getWidth()) {
+				int mapYindex = mouseY / tileSize;
+				int mapXindex = (int) ((mouseX - tileSet.getWidth()) / tileSize);
 
 				if (mapYindex >= map.length || mapXindex >= map[0].length
 						|| mapYindex < 0 || mapXindex < 0) {
@@ -87,9 +85,9 @@ public class Map {
 				tileTexture = new TextureRegion(tileSet,
 						(tileID % numTilesPerRow) * tileSize,
 						(tileID / numTilesPerRow) * tileSize, tileSize, tileSize);
-				batch.draw(tileTexture, tileSetWidth + v * tileSize * scale,
-						Gdx.graphics.getHeight() - ((u + 1) * tileSize * scale),
-						tileSize * scale, tileSize * scale);
+				batch.draw(tileTexture, tileSet.getWidth() + v * tileSize,
+						Gdx.graphics.getHeight() - ((u + 1) * tileSize),
+						tileSize, tileSize);
 			}
 		}
 
@@ -104,7 +102,6 @@ public class Map {
 		}
 	}
 
-	@SuppressWarnings("static-method")
 	public void readMap(String mapName) {
 		FileHandle file2 = Gdx.files.internal(mapName + ".bin");
 		
@@ -134,7 +131,7 @@ public class Map {
 		//printMap();
 	}
 
-	@SuppressWarnings("static-method")
+	@SuppressWarnings("unused")
 	private void printMap() {
 		System.out.println(width + " " + height);
 		for (int y = 0; y < height; y++) {
@@ -161,7 +158,7 @@ public class Map {
 
 		try {
 
-			input = new FileInputStream("mapconfig.properties");
+			input = new FileInputStream(dataFilePath + "mapconfig.properties");
 			properties.load(input);
 
 			tilesetName = properties.getProperty("tilesetName");
@@ -187,16 +184,48 @@ public class Map {
 			for (int x = 0; x < width; x++) {
 				if (getTileID(x, y) < 9) {
 					setTileID(x, y, (int)(Math.random() * 9));
-				} else if (getTileID(x, y) < 19) {
+				} else if (getTileID(x, y) >= 10 && getTileID(x, y) < 19) {
 					setTileID(x, y, (int)(10 + Math.random() * 9));
-				} else if (getTileID(x, y) < 29) {
+				} else if (getTileID(x, y) >= 20 && getTileID(x, y) < 29) {
 					setTileID(x, y, (int)(20 + Math.random() * 9));
-				} else if (getTileID(x, y) < 39) {
+				} else if (getTileID(x, y) >= 30 && getTileID(x, y) < 39) {
 					setTileID(x, y, (int)(30 + Math.random() * 9));
 				}
 			}
 		}
 		//printMap();
+	}
+	
+	// mark the coords of the first fill mark
+	public void markFillCoords(int offsetX, int offsetY) {
+		int mouseX = Gdx.input.getX() + offsetX;
+		int mouseY = Gdx.input.getY() - offsetY;
+		
+		int mapYindex = mouseY / tileSize;
+		int mapXindex = (int) ((mouseX - tileSet.getWidth()) / tileSize);
+		
+		fillMark = new Vector2(mapXindex, mapYindex);
+	}
+	
+	public void fill(int offsetX, int offsetY) {
+		int mouseX = Gdx.input.getX() + offsetX;
+		int mouseY = Gdx.input.getY() - offsetY;
+		
+		int mapYindex = mouseY / tileSize;
+		int mapXindex = (int) ((mouseX - tileSet.getWidth()) / tileSize);
+		
+		int smallerX = (int) ((mapXindex < fillMark.x) ? mapXindex : fillMark.x);
+		int biggerX = (int) ((mapXindex < fillMark.x) ? fillMark.x : mapXindex);
+		int smallerY = (int) ((mapYindex < fillMark.y) ? mapYindex : fillMark.y);
+		int biggerY = (int) ((mapYindex < fillMark.y) ? fillMark.y : mapYindex);
+		
+		
+		for (int i = smallerX; i <= biggerX; i++) {
+			for (int j = smallerY; j <= biggerY; j++) {
+				setTileID(i, j, selectedTileID);
+			}
+		}
+		
 	}
 
 	/* takes: x and y and returns the tileID as an int */
