@@ -46,8 +46,8 @@ public class BinMapEditor extends ApplicationAdapter implements TextInputListene
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
 		
-		int cameraOffsetX = (int)(camera.position.x - camera.viewportWidth / 2f);
-		int cameraOffsetY = (int)(camera.position.y - camera.viewportHeight / 2f);
+		float cameraOffsetX = camera.position.x - camera.viewportWidth / 2f;
+		float cameraOffsetY = camera.position.y - camera.viewportHeight / 2f;
 		
 		if (Gdx.input.isKeyPressed(Keys.R)) {
 			map.randomizeGroundTiles();

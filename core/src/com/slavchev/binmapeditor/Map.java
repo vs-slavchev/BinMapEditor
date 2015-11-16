@@ -47,12 +47,11 @@ public class Map {
 				map[i][j] = toSignedByte(0);
 			}
 		}
-		
 	}
 
-	public void update(int offsetX, int offsetY) {
-		int mouseX = Gdx.input.getX() + offsetX;
-		int mouseY = Gdx.input.getY() - offsetY;
+	public void update(float offsetX, float offsetY) {
+		float mouseX = Gdx.input.getX() + offsetX;
+		float mouseY = Gdx.input.getY() - offsetY;
 
 		tileSet.setPosition( offsetX, offsetY + Gdx.graphics.getHeight() - tileSet.getHeight());
 		if (Gdx.input.justTouched() && Gdx.input.isButtonPressed(Buttons.RIGHT)) {
@@ -65,7 +64,7 @@ public class Map {
 		}
 		if (Gdx.input.isTouched() && Gdx.input.isButtonPressed(Buttons.LEFT)) {
 			if (mouseX >= tileSet.getWidth()) {
-				int mapYindex = mouseY / tileSize;
+				int mapYindex = (int) (mouseY / tileSize);
 				int mapXindex = (int) ((mouseX - tileSet.getWidth()) / tileSize);
 
 				if (mapYindex >= map.length || mapXindex >= map[0].length
@@ -197,9 +196,9 @@ public class Map {
 	}
 	
 	// mark the coords of the first fill mark
-	public void markFillCoords(int offsetX, int offsetY) {
-		int mouseX = Gdx.input.getX() + offsetX;
-		int mouseY = Gdx.input.getY() - offsetY;
+	public void markFillCoords(float offsetX, float offsetY) {
+		int mouseX = (int) (Gdx.input.getX() + offsetX);
+		int mouseY = (int) (Gdx.input.getY() - offsetY);
 		
 		int mapYindex = mouseY / tileSize;
 		int mapXindex = (int) ((mouseX - tileSet.getWidth()) / tileSize);
@@ -207,9 +206,12 @@ public class Map {
 		fillMark = new Vector2(mapXindex, mapYindex);
 	}
 	
-	public void fill(int offsetX, int offsetY) {
-		int mouseX = Gdx.input.getX() + offsetX;
-		int mouseY = Gdx.input.getY() - offsetY;
+	public void fill(float offsetX, float offsetY) {
+		if (fillMark == null) {
+			return;
+		}
+		int mouseX = (int) (Gdx.input.getX() + offsetX);
+		int mouseY = (int) (Gdx.input.getY() - offsetY);
 		
 		int mapYindex = mouseY / tileSize;
 		int mapXindex = (int) ((mouseX - tileSet.getWidth()) / tileSize);

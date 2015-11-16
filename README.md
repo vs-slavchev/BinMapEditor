@@ -8,5 +8,5 @@ Use:
 - 'S' to save your map;
 - 'O' to open an existing map;
 - 'R' to randomize plain tiles;
-- 'M' to mark the cursors position as a corner to make a rectangle;
+- 'M' to mark the cursor's position as a corner to make a rectangle;
 - 'F' to fill the rectange; the second corner is the cursor's position when pressing 'F'.
