@@ -8,10 +8,13 @@ import java.util.Properties;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Buttons;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 
@@ -30,13 +33,15 @@ public class Map {
 
 	// GUI
 	private int selectedTileID;
-	private Vector2 fillMark;
+	private Vector2 fillMark, cursorIndices;
+	private ShapeRenderer shapeRenderer;
 	
 	// files
 	private String dataFilePath = "data/";
 	
 	public Map() {
 		loadProperties();
+		shapeRenderer = new ShapeRenderer();
 		
 		tileSet = new Sprite(new Texture(dataFilePath + tilesetName));
 		tileSet.setPosition( 0, Gdx.graphics.getHeight() - tileSet.getHeight());
@@ -53,7 +58,9 @@ public class Map {
 		float mouseX = Gdx.input.getX() + offsetX;
 		float mouseY = Gdx.input.getY() - offsetY;
 
-		tileSet.setPosition( offsetX, offsetY + Gdx.graphics.getHeight() - tileSet.getHeight());
+		cursorIndices = calculateIndices((int)mouseX, (int)mouseY);
+		
+		tileSet.setPosition(offsetX, offsetY + Gdx.graphics.getHeight() - tileSet.getHeight());
 		if (Gdx.input.justTouched() && Gdx.input.isButtonPressed(Buttons.RIGHT)) {
 
 			// if selecting a tile
@@ -64,8 +71,10 @@ public class Map {
 		}
 		if (Gdx.input.isTouched() && Gdx.input.isButtonPressed(Buttons.LEFT)) {
 			if (mouseX >= tileSet.getWidth()) {
-				int mapYindex = (int) (mouseY / tileSize);
-				int mapXindex = (int) ((mouseX - tileSet.getWidth()) / tileSize);
+				
+				int mapYindex = (int) cursorIndices.y;
+				int mapXindex = (int) cursorIndices.x;
+				
 
 				if (mapYindex >= map.length || mapXindex >= map[0].length
 						|| mapYindex < 0 || mapXindex < 0) {
@@ -89,8 +98,29 @@ public class Map {
 						tileSize, tileSize);
 			}
 		}
-
+		
 		tileSet.draw(batch);
+	}
+	
+	public void drawCursor(OrthographicCamera camera) {
+		if (Gdx.input.getX() >= tileSet.getWidth()) {
+			shapeRenderer.setProjectionMatrix(camera.combined);
+			shapeRenderer.begin(ShapeType.Line);
+			shapeRenderer.setColor(0, 1, 0, 1);
+			shapeRenderer.rect(tileSet.getWidth() + cursorIndices.x * tileSize,
+					Gdx.graphics.getHeight() - ((cursorIndices.y + 1) * tileSize),
+					tileSize, tileSize);
+			shapeRenderer.end();
+			
+			if (fillMark != null) {
+				shapeRenderer.begin(ShapeType.Filled);
+				shapeRenderer.setColor(1, 0, 0, 1);
+				shapeRenderer.rect(tileSet.getWidth() + fillMark.x * tileSize,
+						Gdx.graphics.getHeight() - ((fillMark.y + 1) * tileSize),
+						tileSize, tileSize);
+				shapeRenderer.end();
+			}
+		}
 	}
 
 	public void writeMap(String mapName) {
@@ -103,31 +133,30 @@ public class Map {
 
 	public void readMap(String mapName) {
 		FileHandle file2 = Gdx.files.internal(mapName + ".bin");
-		
-		byte[] bytes;
-		int mapWidth, mapHeight, multFactor;
-		byte[][] map2 = null;
-		
-		try {
-		bytes = file2.readBytes();
-		mapWidth = bytes[0];
-		mapHeight = bytes[1];
-		multFactor = bytes[2];
-		mapWidth *= multFactor;
-		mapHeight *= multFactor;
 
-		map2 = new byte[mapHeight][mapWidth];
-		for (int i = 0; i < mapHeight; i++) {
-			for (int j = 0; j < mapWidth; j++) {
-				map2[i][j] = bytes[3 + i * mapWidth + j];
+		byte[] bytes;
+		byte[][] map2 = null;
+
+		try {
+			bytes = file2.readBytes();
+			width = bytes[0];
+			height = bytes[1];
+			factor = bytes[2];
+			width *= factor;
+			height *= factor;
+
+			map2 = new byte[height][width];
+			for (int i = 0; i < height; i++) {
+				for (int j = 0; j < width; j++) {
+					map2[i][j] = bytes[3 + i * width + j];
+				}
 			}
-		}
 		} catch (GdxRuntimeException ex) {
 			System.out.println("Error reading from file!");
 			return;
 		}
 		map = map2;
-		//printMap();
+		// printMap();
 	}
 
 	@SuppressWarnings("unused")
@@ -200,11 +229,13 @@ public class Map {
 		int mouseX = (int) (Gdx.input.getX() + offsetX);
 		int mouseY = (int) (Gdx.input.getY() - offsetY);
 		
-		int mapYindex = mouseY / tileSize;
-		int mapXindex = (int) ((mouseX - tileSet.getWidth()) / tileSize);
-		
-		fillMark = new Vector2(mapXindex, mapYindex);
+		fillMark = calculateIndices(mouseX, mouseY);
 	}
+	
+	public Vector2 calculateIndices(int x, int y) {
+		return new Vector2((int) ((x - tileSet.getWidth()) / tileSize), y/tileSize );
+	}
+	
 	
 	public void fill(float offsetX, float offsetY) {
 		if (fillMark == null) {
@@ -213,14 +244,12 @@ public class Map {
 		int mouseX = (int) (Gdx.input.getX() + offsetX);
 		int mouseY = (int) (Gdx.input.getY() - offsetY);
 		
-		int mapYindex = mouseY / tileSize;
-		int mapXindex = (int) ((mouseX - tileSet.getWidth()) / tileSize);
+		Vector2 mapIndices = calculateIndices(mouseX, mouseY);
 		
-		int smallerX = (int) ((mapXindex < fillMark.x) ? mapXindex : fillMark.x);
-		int biggerX = (int) ((mapXindex < fillMark.x) ? fillMark.x : mapXindex);
-		int smallerY = (int) ((mapYindex < fillMark.y) ? mapYindex : fillMark.y);
-		int biggerY = (int) ((mapYindex < fillMark.y) ? fillMark.y : mapYindex);
-		
+		int smallerX = (int) ((mapIndices.x < fillMark.x) ? mapIndices.x : fillMark.x);
+		int biggerX = (int) ((mapIndices.x < fillMark.x) ? fillMark.x : mapIndices.x);
+		int smallerY = (int) ((mapIndices.y < fillMark.y) ? mapIndices.y : fillMark.y);
+		int biggerY = (int) ((mapIndices.y < fillMark.y) ? fillMark.y : mapIndices.y);
 		
 		for (int i = smallerX; i <= biggerX; i++) {
 			for (int j = smallerY; j <= biggerY; j++) {
@@ -232,6 +261,12 @@ public class Map {
 
 	/* takes: x and y and returns the tileID as an int */
 	public int getTileID(int x, int y) {
+		if (x < 0 || y < 0
+				|| x >= map[0].length
+				|| y >= map.length) {
+			System.out.println(x + "; " + y + "getting invalid tileID!");
+			return 0;
+		}
 		return map[y][x] + 127;
 	}
 	
@@ -243,8 +278,20 @@ public class Map {
 		}
 		map[yIndex][xIndex] = toSignedByte(tileID);
 	}
+	
+	public int getTotalHeight() {
+		return map.length * tileSize;
+	}
 
 	public Sprite getTileSet() {
 		return tileSet;
+	}
+
+	public int getTileSize() {
+		return tileSize;
+	}
+
+	public void disposeShapeRenderer() {
+		shapeRenderer.dispose();
 	}
 }

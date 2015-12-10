@@ -8,15 +8,18 @@ import com.badlogic.gdx.Input.TextInputListener;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
+import com.badlogic.gdx.math.Vector2;
+import com.sun.prism.GraphicsPipeline.ShaderType;
 
 public class BinMapEditor extends ApplicationAdapter implements TextInputListener{
 	//map data
-	SpriteBatch batch;
-	Map map;
+	private SpriteBatch batch;
+	private Map map;
+	private OrthographicCamera camera;
 	
-	OrthographicCamera camera;
-	
-	String userInput = "";
+	private String userInput = "";
 	boolean opened = false;
 	int cameraSpeed = 400;
 
@@ -66,6 +69,7 @@ public class BinMapEditor extends ApplicationAdapter implements TextInputListene
 		batch.begin();
 		map.drawMap(batch);
 		batch.end();
+		map.drawCursor(camera);
 	}
 
 	private void openAndSaveInputHandling() {
@@ -81,6 +85,7 @@ public class BinMapEditor extends ApplicationAdapter implements TextInputListene
 	public void dispose() {
 		batch.dispose();
 		map.getTileSet().getTexture().dispose();
+		map.disposeShapeRenderer();
 	}
 	
 	@Override
