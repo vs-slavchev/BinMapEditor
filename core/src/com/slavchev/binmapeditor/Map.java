@@ -54,13 +54,13 @@ public class Map {
 		}
 	}
 
-	public void update(float offsetX, float offsetY) {
-		float mouseX = Gdx.input.getX() + offsetX;
-		float mouseY = Gdx.input.getY() - offsetY;
+	public void update(Vector2 offset) {
+		float mouseX = Gdx.input.getX() + offset.x;
+		float mouseY = Gdx.input.getY() - offset.y;
 
 		cursorIndices = calculateIndices((int)mouseX, (int)mouseY);
 		
-		tileSet.setPosition(offsetX, offsetY + Gdx.graphics.getHeight() - tileSet.getHeight());
+		tileSet.setPosition(offset.x, offset.y + Gdx.graphics.getHeight() - tileSet.getHeight());
 		if (Gdx.input.justTouched() && Gdx.input.isButtonPressed(Buttons.RIGHT)) {
 
 			// if selecting a tile
@@ -102,8 +102,9 @@ public class Map {
 		tileSet.draw(batch);
 	}
 	
-	public void drawCursor(OrthographicCamera camera) {
+	public void drawCursor(OrthographicCamera camera, Vector2 offset) {
 		if (Gdx.input.getX() >= tileSet.getWidth()) {
+			// draw the snapped tile drawing cursor
 			shapeRenderer.setProjectionMatrix(camera.combined);
 			shapeRenderer.begin(ShapeType.Line);
 			shapeRenderer.setColor(0, 1, 0, 1);
@@ -115,14 +116,90 @@ public class Map {
 			if (fillMark != null) {
 				shapeRenderer.begin(ShapeType.Filled);
 				shapeRenderer.setColor(1, 0, 0, 1);
-				shapeRenderer.rect(tileSet.getWidth() + fillMark.x * tileSize,
-						Gdx.graphics.getHeight() - ((fillMark.y + 1) * tileSize),
-						tileSize, tileSize);
+				
+				// draw the X on the marked tile
+				shapeRenderer.line(tileSet.getWidth() + fillMark.x * tileSize,
+						Gdx.graphics.getHeight() - ((fillMark.y) * tileSize),
+						tileSet.getWidth() + (fillMark.x + 1) * tileSize,
+						Gdx.graphics.getHeight() - (fillMark.y + 1) * tileSize);
+				shapeRenderer.line(tileSet.getWidth() + (fillMark.x + 1) * tileSize,
+						Gdx.graphics.getHeight() - ((fillMark.y) * tileSize),
+						tileSet.getWidth() + fillMark.x * tileSize,
+						Gdx.graphics.getHeight() - (fillMark.y + 1) * tileSize);
 				shapeRenderer.end();
 			}
+		} else {
+			// draw the tile cursor on the tileset
+			shapeRenderer.setProjectionMatrix(camera.combined);
+			shapeRenderer.begin(ShapeType.Line);
+			shapeRenderer.setColor(1, 1, 0, 1);
+			shapeRenderer.rect(offset.x + Gdx.input.getX()/tileSize*tileSize,
+					offset.y + ((Gdx.graphics.getHeight() - Gdx.input.getY())/tileSize)*tileSize - 1,
+					tileSize + 1, tileSize + 1);
+			shapeRenderer.end();
 		}
 	}
 
+	
+	
+	public void randomizeGroundTiles() {
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				if (getTileID(x, y) < 9) {
+					setTileID(x, y, (int)(Math.random() * 9));
+				} else if (getTileID(x, y) >= 10 && getTileID(x, y) < 19) {
+					setTileID(x, y, (int)(10 + Math.random() * 9));
+				} else if (getTileID(x, y) >= 20 && getTileID(x, y) < 29) {
+					setTileID(x, y, (int)(20 + Math.random() * 9));
+				} else if (getTileID(x, y) >= 30 && getTileID(x, y) < 39) {
+					setTileID(x, y, (int)(30 + Math.random() * 9));
+				}
+			}
+		}
+		//printMap();
+	}
+	
+	// mark the coordinates of the fill mark
+	public void markFillCoords(Vector2 offset) {
+		int mouseX = (int) (Gdx.input.getX() + offset.x);
+		int mouseY = (int) (Gdx.input.getY() - offset.y);
+		
+		fillMark = calculateIndices(mouseX, mouseY);
+	}
+	
+	public Vector2 calculateIndices(int x, int y) {
+		return new Vector2((int) ((x - tileSet.getWidth()) / tileSize), y/tileSize );
+	}
+	
+	
+	public void fill(Vector2 offset) {
+		if (fillMark == null) {
+			return;
+		}
+		int mouseX = (int) (Gdx.input.getX() + offset.x);
+		int mouseY = (int) (Gdx.input.getY() - offset.y);
+		
+		Vector2 mapIndices = calculateIndices(mouseX, mouseY);
+		
+		int smallerX = (int) ((mapIndices.x < fillMark.x) ? mapIndices.x : fillMark.x);
+		int biggerX = (int) ((mapIndices.x < fillMark.x) ? fillMark.x : mapIndices.x);
+		int smallerY = (int) ((mapIndices.y < fillMark.y) ? mapIndices.y : fillMark.y);
+		int biggerY = (int) ((mapIndices.y < fillMark.y) ? fillMark.y : mapIndices.y);
+		
+		for (int i = smallerX; i <= biggerX; i++) {
+			for (int j = smallerY; j <= biggerY; j++) {
+				setTileID(i, j, selectedTileID);
+			}
+		}
+		
+	}
+
+	
+	
+	/*
+	 * map array utilities:
+	 */
+	
 	public void writeMap(String mapName) {
 		FileHandle file = Gdx.files.local(mapName + ".bin");
 		file.writeBytes(new byte[] { (byte) (width / factor), (byte) (height / factor), (byte) factor }, false);
@@ -207,58 +284,6 @@ public class Map {
 		}
 	}
 	
-	public void randomizeGroundTiles() {
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				if (getTileID(x, y) < 9) {
-					setTileID(x, y, (int)(Math.random() * 9));
-				} else if (getTileID(x, y) >= 10 && getTileID(x, y) < 19) {
-					setTileID(x, y, (int)(10 + Math.random() * 9));
-				} else if (getTileID(x, y) >= 20 && getTileID(x, y) < 29) {
-					setTileID(x, y, (int)(20 + Math.random() * 9));
-				} else if (getTileID(x, y) >= 30 && getTileID(x, y) < 39) {
-					setTileID(x, y, (int)(30 + Math.random() * 9));
-				}
-			}
-		}
-		//printMap();
-	}
-	
-	// mark the coords of the first fill mark
-	public void markFillCoords(float offsetX, float offsetY) {
-		int mouseX = (int) (Gdx.input.getX() + offsetX);
-		int mouseY = (int) (Gdx.input.getY() - offsetY);
-		
-		fillMark = calculateIndices(mouseX, mouseY);
-	}
-	
-	public Vector2 calculateIndices(int x, int y) {
-		return new Vector2((int) ((x - tileSet.getWidth()) / tileSize), y/tileSize );
-	}
-	
-	
-	public void fill(float offsetX, float offsetY) {
-		if (fillMark == null) {
-			return;
-		}
-		int mouseX = (int) (Gdx.input.getX() + offsetX);
-		int mouseY = (int) (Gdx.input.getY() - offsetY);
-		
-		Vector2 mapIndices = calculateIndices(mouseX, mouseY);
-		
-		int smallerX = (int) ((mapIndices.x < fillMark.x) ? mapIndices.x : fillMark.x);
-		int biggerX = (int) ((mapIndices.x < fillMark.x) ? fillMark.x : mapIndices.x);
-		int smallerY = (int) ((mapIndices.y < fillMark.y) ? mapIndices.y : fillMark.y);
-		int biggerY = (int) ((mapIndices.y < fillMark.y) ? fillMark.y : mapIndices.y);
-		
-		for (int i = smallerX; i <= biggerX; i++) {
-			for (int j = smallerY; j <= biggerY; j++) {
-				setTileID(i, j, selectedTileID);
-			}
-		}
-		
-	}
-
 	/* takes: x and y and returns the tileID as an int */
 	public int getTileID(int x, int y) {
 		if (x < 0 || y < 0

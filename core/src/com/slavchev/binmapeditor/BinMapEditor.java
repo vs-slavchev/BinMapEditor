@@ -37,6 +37,27 @@ public class BinMapEditor extends ApplicationAdapter implements TextInputListene
 	public void render() {
 		openAndSaveInputHandling();
 				
+		controlCamera();
+		camera.update();
+		batch.setProjectionMatrix(camera.combined);
+		
+		Vector2 cameraOffset = new Vector2(
+				camera.position.x - camera.viewportWidth / 2f,
+				camera.position.y - camera.viewportHeight / 2f);
+		
+		processInput(cameraOffset);
+		
+		map.update(cameraOffset);
+		
+		Gdx.gl.glClearColor(0, 0, 0, 1);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		batch.begin();
+		map.drawMap(batch);
+		batch.end();
+		map.drawCursor(camera, cameraOffset);
+	}
+
+	private void controlCamera() {
 		if (Gdx.input.isKeyPressed(Keys.DOWN)) {	
 			camera.translate(0, -cameraSpeed * Gdx.graphics.getDeltaTime());
 		} else if (Gdx.input.isKeyPressed(Keys.UP)) {
@@ -46,30 +67,18 @@ public class BinMapEditor extends ApplicationAdapter implements TextInputListene
 		} else if (Gdx.input.isKeyPressed(Keys.RIGHT)) {
 			camera.translate(cameraSpeed * Gdx.graphics.getDeltaTime(), 0);
 		}
-		camera.update();
-		batch.setProjectionMatrix(camera.combined);
-		
-		float cameraOffsetX = camera.position.x - camera.viewportWidth / 2f;
-		float cameraOffsetY = camera.position.y - camera.viewportHeight / 2f;
-		
+	}
+
+	private void processInput(Vector2 cameraOffset) {
 		if (Gdx.input.isKeyPressed(Keys.R)) {
 			map.randomizeGroundTiles();
 		}
 		if (Gdx.input.isKeyPressed(Keys.M)) {
-			map.markFillCoords(cameraOffsetX, cameraOffsetY);
+			map.markFillCoords(cameraOffset);
 		}
 		if (Gdx.input.isKeyPressed(Keys.F)) {
-			map.fill(cameraOffsetX, cameraOffsetY);
+			map.fill(cameraOffset);
 		}
-		
-		map.update(cameraOffsetX, cameraOffsetY);
-		
-		Gdx.gl.glClearColor(0, 0, 0, 1);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		batch.begin();
-		map.drawMap(batch);
-		batch.end();
-		map.drawCursor(camera);
 	}
 
 	private void openAndSaveInputHandling() {
